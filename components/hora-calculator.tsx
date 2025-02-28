@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, Timer } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -9,15 +9,56 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
 const HoraCalculator = () => {
+  // Add client-side detection
+  const [isClient, setIsClient] = useState(false);
+  
   // Initial States
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTime, setSelectedTime] = useState(
-    currentTime.getHours().toString().padStart(2, '0') + ':' + 
-    currentTime.getMinutes().toString().padStart(2, '0')
+  const [displayTime, setDisplayTime] = useState(
+    new Date().getHours().toString().padStart(2, '0') + ':' + 
+    new Date().getMinutes().toString().padStart(2, '0')
   );
   const [countdown, setCountdown] = useState({ hora: '', uba: '' });
+  const [lastUpdated, setLastUpdated] = useState('');
+
+  // Calculate hora and countdown - wrapped in useCallback to prevent dependency issues
+  const calculateHora = useCallback(() => {
+    try {
+      const now = new Date();
+      setCurrentTime(now);
+      setLastUpdated(now.toLocaleTimeString());
+      
+      const formattedTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      
+      // Always update displayTime to current time
+      setDisplayTime(formattedTime);
+      
+      // Calculate main Horai countdown
+      const currentMinute = now.getMinutes();
+      const currentSecond = now.getSeconds();
+      const remainingMinutes = 59 - currentMinute;
+      const remainingSeconds = 59 - currentSecond;
+      
+      // Calculate Uba Horai countdown
+      const currentUbaMinute = currentMinute % 12;
+      const remainingUbaMinutes = 11 - currentUbaMinute;
+      
+      setCountdown({
+        hora: `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`,
+        uba: `${remainingUbaMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
+      });
+    } catch (error) {
+      console.error("Error in calculateHora:", error);
+    }
+  }, []);
+
+  // Check if we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Constants for planets
   const planets = {
@@ -58,28 +99,17 @@ const HoraCalculator = () => {
     }
   };
 
-  // First, add this right after your planets declaration
-const horaDescriptions = {
-  surya: "குரிய ஹோரை --- அரசு அதிகாரிகளை சந்திக்க, பதவி ஏற்க, மருந்து உண்ண, உயில் எழுத, வேலைக்கு முயற்ச்சி செய்ய.",
-  chandra: "சந்திர ஹோரை --- ஆடை, ஆபரணங்கள் அமைய, ப்ராயாணம் செய்ய, பாஸ்போர்ட் எடுக்க, மாடு வாங்க, வியாபாரம் செய்ய, கல்வி கற்க.",
-  cevvai: "செவ்வாய் ஹோரை --- நிலம் தொடர்பான பணிகளை செய்ய, அடுப்பு அமைக்க, குளைக்கு தீ மூட்ட, போர் கருவிகள் செய்தல், போர் தொடங்குதல், மருந்து உண்ண.",
-  budha: "புதன் ஹோரை --- புதிய கணக்குகள் எழுத, கடித போக்குவரத்து, தேர்வு எழுத, ஜோதிடம், அறிவியல் ஆராய்ச்சிகளில் ஈடுபட, பெண் பார்க்க, தரகு வேலை மேற்கோள்ள.",
-  guru: "குரு ஹோரை --- சேமிப்பு கணக்கு தொடங்க, முதலீடுகள் செய்ய, பெரிய மனிதர்களை சந்தித்து பேச, குருவை சந்தித்து ஆசி பெற, கப காரியங்கள் செய்ய, பயிர் செய்ய.",
-  sukra: "சுக்கிர ஹோரை --- ஆடை, ஆபரணங்கள் வாங்க, வாகனங்கள் வாங்க, கால்நடைகள் வாங்க, திருமணம் குறித்து பேச, எதிர் பாலினத்தாரை சந்தித்து பேச, விருந்து உண்ண, கலைகள் பயில.",
-  sani: "சனி ஹோரை --- இரும்பு பொருட்கள் வாங்க, மின் சாதனங்கள் தொடர்பான பணிகளுக்கு, எர் உழ, எருவிட."
-};
+  // Hora descriptions
+  const horaDescriptions = {
+    surya: "குரிய ஹோரை --- அரசு அதிகாரிகளை சந்திக்க, பதவி ஏற்க, மருந்து உண்ண, உயில் எழுத, வேலைக்கு முயற்ச்சி செய்ய.",
+    chandra: "சந்திர ஹோரை --- ஆடை, ஆபரணங்கள் அமைய, ப்ராயாணம் செய்ய, பாஸ்போர்ட் எடுக்க, மாடு வாங்க, வியாபாரம் செய்ய, கல்வி கற்க.",
+    cevvai: "செவ்வாய் ஹோரை --- நிலம் தொடர்பான பணிகளை செய்ய, அடுப்பு அமைக்க, குளைக்கு தீ மூட்ட, போர் கருவிகள் செய்தல், போர் தொடங்குதல், மருந்து உண்ண.",
+    budha: "புதன் ஹோரை --- புதிய கணக்குகள் எழுத, கடித போக்குவரத்து, தேர்வு எழுத, ஜோதிடம், அறிவியல் ஆராய்ச்சிகளில் ஈடுபட, பெண் பார்க்க, தரகு வேலை மேற்கோள்ள.",
+    guru: "குரு ஹோரை --- சேமிப்பு கணக்கு தொடங்க, முதலீடுகள் செய்ய, பெரிய மனிதர்களை சந்தித்து பேச, குருவை சந்தித்து ஆசி பெற, கப காரியங்கள் செய்ய, பயிர் செய்ய.",
+    sukra: "சுக்கிர ஹோரை --- ஆடை, ஆபரணங்கள் வாங்க, வாகனங்கள் வாங்க, கால்நடைகள் வாங்க, திருமணம் குறித்து பேச, எதிர் பாலினத்தாரை சந்தித்து பேச, விருந்து உண்ண, கலைகள் பயில.",
+    sani: "சனி ஹோரை --- இரும்பு பொருட்கள் வாங்க, மின் சாதனங்கள் தொடர்பான பணிகளுக்கு, எர் உழ, எருவிட."
+  };
 
-// Find the return statement and add this section before the main grid:
-<div className="bg-gray-50 rounded-lg p-4 mb-4 text-sm space-y-2">
-  <h3 className="font-semibold text-lg mb-2 text-gray-800 border-b pb-1">
-    எந்த கிழமையில் எந்த ஹோரையில் எந்த வேலையை செய்தால் என்ன பலன்கள் கிடைக்கும் என்பது குறித்து விரிவாக அறிந்து கொள்ளலாம்
-  </h3>
-  {Object.entries(horaDescriptions).map(([key, desc]) => (
-    <div key={key} className="bg-white p-2 rounded border text-gray-700">
-      {desc}
-    </div>
-  ))}
-</div>
   // Uba Horai sequences for each main Horai
   const ubaHoraiSequences = {
     surya: ['surya', 'chandra', 'cevvai', 'budha', 'guru'],
@@ -102,9 +132,54 @@ const horaDescriptions = {
     6: ['sani', 'guru', 'cevvai', 'surya', 'sukra', 'budha', 'chandra']
   };
 
-
   const weekDays = ['ஞாயிறு', 'திங்கள்', 'செவ்வாய்', 'புதன்', 'வியாழன்', 'வெள்ளி', 'சனி'];
   const weekDaysEnglish = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Only run timers on the client side
+  useEffect(() => {
+    if (!isClient) return;
+    
+    // Initial calculation
+    calculateHora();
+    
+    // Set up interval for second-level updates (UI countdown)
+    const secondTimer = setInterval(() => {
+      calculateHora();
+    }, 1000);
+    
+    return () => {
+      clearInterval(secondTimer);
+    };
+  }, [isClient, calculateHora]);
+  
+  // Auto-refresh effect for minute updates
+  useEffect(() => {
+    if (!isClient) return;
+    
+    // Calculate initial time to next minute
+    const now = new Date();
+    const secondsUntilNextMinute = (60 - now.getSeconds()) * 1000;
+    
+    // First timeout to sync with minute boundary
+    const syncTimeout = setTimeout(() => {
+      calculateHora();
+      
+      // Then set up the regular minute interval
+      const minuteInterval = setInterval(() => {
+        calculateHora();
+      }, 60000); // Use 60000 for production (1 minute)
+      
+      // Clean up the interval when component unmounts
+      return () => {
+        clearInterval(minuteInterval);
+      };
+    }, secondsUntilNextMinute);
+    
+    // Clean up the sync timeout if component unmounts before it fires
+    return () => {
+      clearTimeout(syncTimeout);
+    };
+  }, [isClient, calculateHora]);
 
   // Get current Uba Horai
   const getCurrentUbaHorai = (mainHoraiPlanet, minutes) => {
@@ -139,9 +214,10 @@ const horaDescriptions = {
   };
 
   const getSelectedHora = () => {
-    const [hours] = selectedTime.split(':').map(Number);
+    // Always use current time for active hora
+    const hours = currentTime.getHours();
     const adjustedHour = (hours + 18) % 24;
-    const sequence = getHoraSequence(selectedDate);
+    const sequence = getHoraSequence(currentTime);
     return sequence[adjustedHour];
   };
 
@@ -162,33 +238,8 @@ const horaDescriptions = {
   };
 
   const handleTimeChange = (e) => {
-    setSelectedTime(e.target.value);
+    setDisplayTime(e.target.value);
   };
-
-  // Timer Effect with Uba Horai
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
-      
-      // Calculate main Horai countdown
-      const currentMinute = now.getMinutes();
-      const currentSecond = now.getSeconds();
-      const remainingMinutes = 59 - currentMinute;
-      const remainingSeconds = 59 - currentSecond;
-      
-      // Calculate Uba Horai countdown
-      const currentUbaMinute = currentMinute % 12;
-      const remainingUbaMinutes = 11 - currentUbaMinute;
-      
-      setCountdown({
-        hora: `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`,
-        uba: `${remainingUbaMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   const HoraCell = ({ planetKey, hour, isCurrentHour }) => {
     const planet = planets[planetKey];
@@ -237,31 +288,50 @@ const horaDescriptions = {
     );
   };
 
-  const { day, night } = getDayHoras(selectedDate);
-  const [selectedHours] = selectedTime.split(':').map(Number);
-  const currentHour = (selectedHours + 18) % 24;
+  // Use current time for display
+  const { day, night } = getDayHoras(currentTime);
+  
+  // Use displayTime for current hora calculation
+  const [displayHours] = displayTime.split(':').map(Number);
+  const currentHour = (displayHours + 18) % 24;
 
+  // Server-side safe rendering check
+  if (!isClient) {
+    // Return a minimal loading state that won't cause hydration errors
+    return (
+      <div className="p-4 text-center">
+        <p>Loading Hora Calculator...</p>
+      </div>
+    );
+  }
+
+  // Client-side rendering
   return (
     <div className="max-w-3xl mx-auto p-2 md:p-4 space-y-2 bg-white">
-    <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
-      <div className="text-center w-full md:w-auto">
-        <h1 className="text-lg md:text-xl font-bold text-orange-600">
-          ஓம் மகாகணபதியே நம:
-        </h1>
-        <h2 className="text-base md:text-lg font-semibold text-gray-700">
-          தினசரி ஹோரை & உப ஹோரை
-        </h2>
+      {/* Last updated timestamp */}
+      <div className="text-right text-xs text-gray-500 mb-1">
+        Last updated: {lastUpdated}
       </div>
+      
+      <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+        <div className="text-center w-full md:w-auto">
+          <h1 className="text-lg md:text-xl font-bold text-orange-600">
+            ஓம் மகாகணபதியே நம:
+          </h1>
+          <h2 className="text-base md:text-lg font-semibold text-gray-700">
+            தினசரி ஹோரை & உப ஹோரை
+          </h2>
+        </div>
 
-      <div className="bg-blue-50 rounded-lg p-2 w-full md:w-auto">
-        <div className="text-xs text-gray-600">தற்போதைய ஹோரை</div>
-        <div className="text-sm font-semibold">{planets[getSelectedHora()].name}</div>
-        <div className="text-xs text-gray-500">{getTimeRange(currentHour)}</div>
-        <div className="text-xs text-blue-600 mt-1">
-          உப ஹோரை: {planets[getCurrentUbaHorai(getSelectedHora(), currentTime.getMinutes())].name}
+        <div className="bg-blue-50 rounded-lg p-2 w-full md:w-auto">
+          <div className="text-xs text-gray-600">தற்போதைய ஹோரை</div>
+          <div className="text-sm font-semibold">{planets[getSelectedHora()].name}</div>
+          <div className="text-xs text-gray-500">{getTimeRange(currentHour)}</div>
+          <div className="text-xs text-blue-600 mt-1">
+            உப ஹோரை: {planets[getCurrentUbaHorai(getSelectedHora(), currentTime.getMinutes())].name}
+          </div>
         </div>
       </div>
-    </div>
 
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-0 mb-2">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
@@ -275,7 +345,7 @@ const horaDescriptions = {
             <input
               type="time"
               className="p-1.5 border rounded w-full md:w-auto text-sm"
-              value={selectedTime}
+              value={displayTime} // Show current time
               onChange={handleTimeChange}
             />
           </div>
@@ -294,7 +364,6 @@ const horaDescriptions = {
             <span className="text-xs md:text-sm">அடுத்த உப ஹோரை: {countdown.uba}</span>
           </div>
         </div>
-        
       </div>
     
       <div className="space-y-2">
@@ -326,8 +395,9 @@ const horaDescriptions = {
           </div>
         </div>
       </div>
-  {/* Descriptions section at the bottom */}
-  <div className="bg-gray-50 rounded-lg p-4 mt-6 text-sm space-y-2">
+
+      {/* Descriptions section at the bottom */}
+      <div className="bg-gray-50 rounded-lg p-4 mt-6 text-sm space-y-2">
         <h3 className="font-semibold text-lg mb-2 text-gray-800 border-b pb-1">
           எந்த கிழமையில் எந்த ஹோரையில் எந்த வேலையை செய்தால் என்ன பலன்கள் கிடைக்கும் என்பது குறித்து விரிவாக அறிந்து கொள்ளலாம்
         </h3>
@@ -340,4 +410,5 @@ const horaDescriptions = {
     </div>
   );
 };
+
 export default HoraCalculator;
